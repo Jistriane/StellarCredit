@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic
+langchain==0.1.20
+openai
+httpx
+requests
+joblib
+pandas
+langchain-openai

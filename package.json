@@ -1,0 +1,16 @@
+{
+  "name": "stellarcredit",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "predev": "./scripts/init.sh",
+    "dev:frontend": "cd apps/web && npm run dev",
+    "dev:elisa": "cd services/elisa-os && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt && SCORE_SERVICE_URL=http://localhost:8081 uvicorn main:app --host 0.0.0.0 --port 8001",
+    "dev:risk": "cd services/risk-service && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000",
+    "dev:score": "cd services/score-service && PORT=8081 cargo run --release",
+    "dev": "npm run predev && concurrently \"npm run dev:frontend\" \"npm run dev:elisa\" \"npm run dev:risk\" \"npm run dev:score\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

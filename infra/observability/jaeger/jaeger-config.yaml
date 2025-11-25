@@ -1,0 +1,61 @@
+# Jaeger All-in-One Configuration for StellarCredit
+
+# Collector configuration
+collector:
+  zipkin:
+    host-port: ":9411"
+  
+  grpc:
+    max-message-size: 4194304
+  
+  http:
+    host-port: ":14268"
+
+# Query configuration
+query:
+  base-path: /jaeger
+  
+  ui:
+    dependencies:
+      menuEnabled: true
+
+# Agent configuration
+agent:
+  host-port: ":6831"
+
+# Storage configuration
+storage:
+  type: badger
+  badger:
+    ephemeral: false
+    directory-key: /badger/key
+    directory-value: /badger/data
+    span-store-ttl: 168h  # 7 days retention
+
+# Sampling configuration
+sampling:
+  strategies:
+    - service: score-service
+      type: probabilistic
+      param: 0.1  # 10% sampling
+    
+    - service: risk-service
+      type: probabilistic
+      param: 0.1
+    
+    - service: pix-service
+      type: probabilistic
+      param: 0.5  # Higher sampling for critical service
+    
+    - service: loan-service
+      type: probabilistic
+      param: 0.5
+    
+    - service: elisa-service
+      type: probabilistic
+      param: 0.05  # Lower for high traffic
+    
+    # Default sampling
+    default:
+      type: probabilistic
+      param: 0.01  # 1% for everything else

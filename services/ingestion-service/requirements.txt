@@ -1,0 +1,4 @@
+stellar-sdk
+kafka-python
+sseclient-py
+python-dotenv

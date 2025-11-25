@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: stellarcredit-postgres
+    environment:
+      POSTGRES_USER: stellar
+      POSTGRES_PASSWORD: stellar
+      POSTGRES_DB: stellarcredit
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - stellar-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stellar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: stellarcredit-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - stellar-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  stellar-net:
+    driver: bridge
+
+volumes:
+  postgres_data:

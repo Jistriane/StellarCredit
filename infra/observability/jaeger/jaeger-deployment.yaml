@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jaeger-config
+  namespace: stellarcredit
+data:
+  jaeger.yaml: |
+    # Jaeger All-in-One Configuration
+    service_name: stellarcredit
+
+    # Sampler configuration
+    sampler:
+      type: probabilistic
+      param: 0.01  # 1% sampling in production
+
+    # Reporter configuration
+    reporter:
+      log_spans: false
+      max_queue_size: 1000
+      flush_interval: 1s
+      local_agent_host_port: jaeger-agent:6831
+
+    # Storage backend (Elasticsearch)
+    storage:
+      type: elasticsearch
+      options:
+        es:
+          server-urls: http://elasticsearch:9200
+          index-prefix: jaeger
+          num_shards: 5
+          num_replicas: 1
+
+    # Query service
+    query:
+      base-path: /
+      static_files: /go/jaeger-ui/
+      health_check_http_port: 16687
+
+    # Collector
+    collector:
+      zipkin:
+        http-port: 9411
+      grpc-port: 14250
+      http-port: 14268
+
+    # Agent
+    agent:
+      http-port: 5778
+      grpc-port: 6831
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: stellarcredit
+  labels:
+    app: jaeger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one:latest
+        env:
+        - name: COLLECTOR_ZIPKIN_HOST_PORT
+          value: ":9411"
+        - name: SPAN_STORAGE_TYPE
+          value: "memory"
+        - name: MEMORY_MAX_TRACES
+          value: "10000"
+        ports:
+        - containerPort: 5775
+          protocol: UDP
+          name: zipkin-compact
+        - containerPort: 6831
+          protocol: UDP
+          name: jaeger-compact
+        - containerPort: 6832
+          protocol: UDP
+          name: jaeger-binary
+        - containerPort: 5778
+          protocol: TCP
+          name: cfg-sampling
+        - containerPort: 16686
+          protocol: TCP
+          name: frontend
+        - containerPort: 14250
+          protocol: TCP
+          name: grpc
+        - containerPort: 14268
+          protocol: TCP
+          name: collector
+        - containerPort: 9411
+          protocol: TCP
+          name: zipkin
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: stellarcredit
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - name: jaeger-compact
+    port: 6831
+    targetPort: 6831
+    protocol: UDP
+  - name: frontend
+    port: 16686
+    targetPort: 16686
+  - name: collector
+    port: 14268
+    targetPort: 14268
+  - name: zipkin
+    port: 9411
+    targetPort: 9411
+  type: ClusterIP
